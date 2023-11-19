@@ -90,65 +90,71 @@ class SearchFunctions:
 
         return None
     
-    def beam_search(self, start, end, tipo):
-        nodos = self.obtener_nodos_validos()
-        beam = self.calcular_beta(nodos)
-        colaPrioridad = [(start.costo,start)]
-        recorrido = [start]
+    # def beam_search(self, start, end, tipo):
+    #     nodos = self.obtener_nodos_validos()
+    #     beam = self.calcular_beta(nodos)
+    #     colaPrioridad = [(start.costo,start)]
+    #     recorrido = [start]
 
-        while end not in recorrido:
-            while colaPrioridad:
-                try:
-                    nodoActual = heapq.heappop(colaPrioridad)
-                    recorrido.append(nodoActual[1])
-                    current_path = recorrido
+    #     while end not in recorrido:
+    #         while colaPrioridad:
+    #             try:
+    #                 nodoActual = heapq.heappop(colaPrioridad)
+    #                 recorrido.append(nodoActual[1])
+    #                 current_path = recorrido
 
-                    if nodoActual[1] == end:
-                        return current_path + [nodoActual[1]]
+    #                 if nodoActual[1] == end:
+    #                     return current_path + [nodoActual[1]]
                     
-                    hijos = self.obtener_nodos_adyacentes(nodoActual[1])
+    #                 hijos = self.obtener_nodos_adyacentes(nodoActual[1])
 
-                    for hijo in hijos:
+    #                 for hijo in hijos:
 
-                        hijo.calcular_heuristica(end, tipo)
+    #                     hijo.calcular_heuristica(end, tipo)
 
-                        if len(colaPrioridad) < beam:
-                            heapq.heappush(colaPrioridad, (hijo.costo,hijo))
-                            recorrido.append(hijo)
-                except IndexError:
-                    break
+    #                     if len(colaPrioridad) < beam:
+    #                         heapq.heappush(colaPrioridad, (hijo.costo,hijo))
+    #                         recorrido.append(hijo)
+    #             except IndexError:
+    #                 break
 
-        return recorrido
+    #     return recorrido
 
     def recorrido_beam_search(self, inicio, objetivo, tipo):
         nodos = self.obtener_nodos_validos()
         beta = self.calcular_beta(nodos)
-        recorrido = set()
+        recorrido = [inicio]
+        visitados = [(inicio.x, inicio.y)]  # Lista de nodos visitados como tuplas (x, y)
         nivel_actual = [inicio]
 
         while nivel_actual and objetivo not in recorrido:
-            proximo_nivel = set()
+            proximo_nivel = []
 
             for nodo_actual in nivel_actual:
+                if nodo_actual == objetivo:
+                    recorrido.append(nodo_actual)
+                    return recorrido
+
                 nodo_actual.calcular_heuristica(objetivo, tipo)
                 adyacentes = self.obtener_nodos_adyacentes(nodo_actual)
 
                 for adyacente in adyacentes:
                     adyacente.calcular_heuristica(objetivo, tipo)
-                    if adyacente not in recorrido and adyacente not in nivel_actual:
-                        proximo_nivel.add(adyacente)
+                    posicion = (adyacente.x, adyacente.y)
+                    if posicion not in visitados and adyacente not in nivel_actual:
+                        proximo_nivel.append(adyacente)
+                        visitados.append(posicion)
 
-            # Ordenar por heurística
-            proximo_nivel = sorted(proximo_nivel, key=lambda nodo: nodo.heuristica, reverse=True)
-            print("Proximo Nivel:", [(nodo.x, nodo.y, nodo.heuristica) for nodo in proximo_nivel])
+            # Ordenar por heurística de forma ascendente
+            proximo_nivel.sort(key=lambda nodo: nodo.heuristica)
 
             # Tomar los mejores 'beta' nodos
             nivel_actual = proximo_nivel[:min(beta, len(proximo_nivel))]
 
-            # Agregar los nodos del nivel actual al conjunto de recorrido
-            recorrido.update(nivel_actual)
+            # Agregar los nodos del nivel actual a la lista de recorrido
+            recorrido.extend(nivel_actual)
 
-        return list(recorrido)
+        return recorrido
 
     # def recorrido_beam_search(self, inicio, objetivo, tipo):
     #     nodos = self.obtener_nodos_validos()
