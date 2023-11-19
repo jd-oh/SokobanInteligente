@@ -1,8 +1,11 @@
+import math
+from queue import PriorityQueue
 from mesa import Agent
 from collections import deque
 from GoalAgent import GoalAgent
 
 from RoadAgent import RoadAgent
+import heapq
 
 class RobotAgent(Agent):
 
@@ -27,7 +30,9 @@ class RobotAgent(Agent):
             #print("El agente está buscando un camino.")
             start = self.pos
             goal = self.model.get_goal_position()
-            self.path, self.came_from= self.breadth_first_search(start)
+            #self.path, self.came_from= self.breadth_first_search(start)
+            #self.path, self.came_from = self.uniform_cost_search(start)
+            self.path, self.came_from = self.a_star_search(start)
             self.traversePath(self.path, self.came_from, 0, self.pos, goal)
             #print("El agente ha encontrado un camino.")
             #print(self.path)
@@ -119,8 +124,8 @@ class RobotAgent(Agent):
         keys = list(came_from.keys())
         path = keys
         
-       # print("El agente ha encontrado un camino.", path)
-        print("came_from: ",came_from)
+        print("El agente ha encontrado un camino.", path)
+        #print("came_from: ",came_from)
 
         return path, came_from
     """
@@ -171,6 +176,127 @@ class RobotAgent(Agent):
             #Siguiente paso
             self.traversePath(path, came_from, counter, next_step, goal)
         print("nueva ruta: ",self.rutaEntera)
+
+
+    #Realiza la búsqueda de costo uniforme y crea una ruta. Pero esta ruta hace movimientos en diagonal.
+    #También retorna un diccionario con la ruta desde cada nodo hasta el nodo inicial.
+    def uniform_cost_search(self, start):
+        goal = self.model.get_goal_position()
+        queue = []  # La frontera ahora es una cola de prioridad
+        heapq.heappush(queue, (0, start))  # Empuja el nodo inicial a la frontera con un costo de 0
+        came_from = {}
+        cost_so_far = {}
+        came_from[start] = [start]  # Inicializa con el nodo de inicio
+        cost_so_far[start] = 0
+
+        while len(queue) > 0:
+            current = heapq.heappop(queue)[1]  # Extrae el nodo con el menor costo
+            #print("current: ",current)
+            #print("came_from: ",came_from)
+            #print("cost_so_far: ",cost_so_far)
+            #print("frontier: ",frontier)
+
+            # Si el nodo actual es el GoalAgent, detén la búsqueda
+            cell_contents = self.model.grid.get_cell_list_contents([current])
+            if any(isinstance(content, GoalAgent) for content in cell_contents):
+                break
+
+            # Para cada vecino del nodo actual que no haya sido visitado, añádelo a la cola y al diccionario
+            for next in self.get_valid_neighbors(current):
+                new_cost = self.cost(next)  # Calcula el nuevo costo hasta el próximo nodo. Este costo será la heuristica Manhattan hasta la meta
+
+                #print(f"Costo desde {current} hasta {next} es {self.cost(next)}")
+                #print(f"Nuevo costo para {next} es {new_cost}")
+
+                # Si el nodo no ha sido visitado (no se le ha calculado el costo) o el nuevo costo es menor, 
+                # añádelo a la cola y al diccionario
+                if next not in cost_so_far or new_cost < cost_so_far[next]:  # Si el nodo no ha sido visitado o el nuevo costo es menor
+                    cost_so_far[next] = new_cost
+                    priority = new_cost
+                    heapq.heappush(queue, (priority, next))
+                    came_from[next] = came_from[current] + [next]  # Agrega el nodo actual a la lista del nodo padre
+
+        keys = list(came_from.keys())
+        path = keys
+        print("El agente ha encontrado un camino.", path)
+        return path, came_from
+    
+    # Calcula el costo para costo-uniforme. En este caso, el costo es la distancia Manhattan desde el nodo 'next' hasta la meta.
+    def cost(self, next):
+        return self.calculateManhattanHeuristic(next)
+    
+    #Calcula la heurística de Manhattan desde el nodo 'next' hasta la meta. 
+    def calculateManhattanHeuristic(self, next):
+        goal = self.model.get_goal_position()
+        cost= abs(goal[0]- next[0]) + abs(goal[1] - next[1])
+        return cost
+    
+    #Calcula la heurística euclidiana desde el nodo 'next' hasta la meta.
+    def calculateEuclideanHeuristic(self, next):
+        goal = self.model.get_goal_position()
+        return ((goal[0] - next[0])**2 + (goal[1] - next[1])**2)**(1/2)
+    
+    def a_star_search(self, start):
+        frontier = PriorityQueue()
+        frontier.put(start, 0)
+        came_from = {}
+        cost_so_far = {}
+        came_from[start] = [start]
+        cost_so_far[start] = 0
+        
+        while not frontier.empty():
+            current = frontier.get()
+            
+            # Si el próximo nodo es el GoalAgent, detén la búsqueda
+            cell_contents = self.model.grid.get_cell_list_contents([current])
+            if any(isinstance(content, GoalAgent) for content in cell_contents):
+                break
+            priority=0
+            for next in self.get_valid_neighbors(current):
+                prioridadAnterior = priority
+                print("get_valid_neighbors: ",self.get_valid_neighbors(current))
+                new_cost = cost_so_far[current] + 1
+                if next not in cost_so_far or new_cost < cost_so_far[next]:
+                    cost_so_far[next] = new_cost
+                    priority = new_cost + self.calculateManhattanHeuristic(next)
+                    
+                    frontier.put(next, priority)
+                    print("priority: ",priority, "de ",next)
+                    came_from[next] = came_from[current] + [next]
+                    if (prioridadAnterior==priority):
+                        print("prioridad anterior: ",prioridadAnterior,"prioridad actual: ",priority)
+                        frontier.queue=self.sortNeighborhoods(list(frontier.queue),current)
+                    
+                
+                print("ordenado con current: ",current)
+            
+            print("frontier: ",frontier.queue)
+            
+
+        keys = list(came_from.keys())
+        path = keys
+        print("El agente ha encontrado un camino.", path)
+        
+        return path, came_from
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
    
