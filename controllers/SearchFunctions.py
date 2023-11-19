@@ -1,9 +1,10 @@
 from collections import deque
 import queue
 import heapq
-from models.Node import Node
+
 from queue import PriorityQueue
 
+from models.Node import Node
 from models.PriorityNode import NodoPrioridad
 
 
