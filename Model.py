@@ -18,6 +18,7 @@ class SokobanModel(Model):
         self.grid=MultiGrid(width,height,False) #Torus es falso para que no se salga de la grilla
         self.schedule=RandomActivation(self)
         self.running=True
+
         """
         self.datacollector=mesa.DataCollector(
             model_reporters={
@@ -27,8 +28,8 @@ class SokobanModel(Model):
         )
         """
         matrizArchivo=self.leerArchivo()
-        matriz=self.crearMatrizAgentes(matrizArchivo)
-        self.ubicarAgentes(matriz)
+        self.matriz, self.contadorId=self.crearMatrizAgentes(matrizArchivo)
+        self.ubicarAgentes(self.matriz)
 
 
     def step(self) -> None:
@@ -46,7 +47,8 @@ class SokobanModel(Model):
     """
     def crearMatrizAgentes(self,matrizArchivo):
         
-
+        robots= []
+        cajas = []
         matriz = [[[] for _ in range(len(matrizArchivo[0]))] for _ in range(len(matrizArchivo))]
 
         contadorId=0
@@ -59,10 +61,10 @@ class SokobanModel(Model):
                 elif (columna=="C"):
                     contadorId+=1
                     matriz[i][j].append(RoadAgent(contadorId,self))
-                elif (columna=="a"):
+                elif (columna=="C-a"):
                     contadorId+=1
                     matriz[i][j].append(RobotAgent(contadorId,self))
-                elif (columna=="b"):
+                elif (columna=="C-b"):
                     contadorId+=1
                     matriz[i][j].append(PackageAgent(contadorId,self))
                 elif(columna=="M"):
@@ -71,11 +73,11 @@ class SokobanModel(Model):
                 else:
                     continue
     
-        return matriz   
+        return matriz, contadorId 
         
     def leerArchivo(self):
         fileLoad = FileLoad()
-        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa.txt")
+        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
         return matrizArchivo
         
 
@@ -101,3 +103,16 @@ class SokobanModel(Model):
                 self.grid.place_agent(matriz[i][j][0], (contadorX, contadorY))
                 #print("contador X:  "+str(contadorX)+" contadorY "+str(contadorY)+" "+str(matriz[i][j][0]))
                 contadorX+=1
+
+
+    def nextId(self):
+        self.contadorId+=1
+        return self.contadorId
+    
+    def get_goal_position(self):
+        for (contents, pos) in self.grid.coord_iter():
+            x, y = pos
+            if any(isinstance(content, GoalAgent) for content in contents):
+                return (x, y)
+        return None
+
