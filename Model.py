@@ -8,7 +8,7 @@ from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 import mesa
 from WallAgent import WallAgent
-from controller.FileLoad import FileLoad
+from controllers.FileLoad import FileLoad
 
 
 

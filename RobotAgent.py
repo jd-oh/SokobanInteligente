@@ -90,6 +90,8 @@ class RobotAgent(Agent):
         return posicionesOrdenadas + listaPosiblesPosiciones
     
     
+    #Realiza la búsqueda en anchura y crea una ruta. Pero esta ruta hace movimientos en diagonal.
+    #También retorna un diccionario con la ruta desde cada nodo hasta el nodo inicial, esto se usará
     
     def breadth_first_search(self, start):
         frontier = deque() 
