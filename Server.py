@@ -17,38 +17,9 @@ SIZE_OF_CANVAS_IN_PIXELS_Y=500
 
 
 fileLoad = FileLoad()
-matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa.txt")
+matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
 NumberCellsX=len(matrizArchivo[0])
 NumberCellsY=len(matrizArchivo)
-matriz = [[[] for _ in range(len(matrizArchivo[0]))] for _ in range(len(matrizArchivo))]
-
-#matriz=[[]]
-
-contadorRocas=0
-contadorPaquetes=0
-contadorRobots=0
-contadorCaminos=0
-
-
-for i, fila in enumerate(matrizArchivo):
-    for j, columna in enumerate(fila):
-        
-        if (columna=="R"):
-            contadorRocas+=1
-            matriz[i][j].append(WallAgent(contadorRocas,SokobanModel))
-        elif (columna=="C"):
-            contadorCaminos+=1
-            matriz[i][j].append(RoadAgent(contadorCaminos,SokobanModel))
-        elif (columna=="a"):
-            contadorRobots+=1
-            matriz[i][j].append(RobotAgent(contadorRobots,SokobanModel))
-        elif (columna=="b"):
-            contadorPaquetes+=1
-            matriz[i][j].append(PackageAgent(contadorPaquetes,SokobanModel))
-        elif(columna=="M"):
-            matriz[i][j].append(GoalAgent(1,SokobanModel))
-        else:
-            matriz[i][j].append("error")
 
             
 
@@ -61,25 +32,25 @@ simulation_params={
 
 def agent_portrayal(agent):
 
-
-    portrayal = {"Shape": "circle","Filled:": "true","r": 0.5}
     
+    portrayal = {"Shape": "circle","Filled:": "true","r": 0.5}
+    if isinstance(agent, RobotAgent):
+        return {"Shape":"iconos/robot.png", "Layer": 1, "scale": True}
     if isinstance(agent, WallAgent):
         return {"Shape":"iconos/muro.png", "Layer": 0, "scale": True} 
     if isinstance(agent, GoalAgent):
         return {"Shape":"iconos/bandera.png", "Layer": 0, "scale": True}
     if isinstance(agent, PackageAgent):
-        return {"Shape":"iconos/paquete.png", "Layer": 0, "scale": True}
+        return {"Shape":"iconos/paquete.png", "Layer": 1, "scale": True}
     if isinstance(agent, RoadAgent):
         return {"Shape":"iconos/pavimentacion.png", "Layer": 0, "scale": True}    
-    if isinstance(agent, RobotAgent):
-        return {"Shape":"iconos/robot.png", "Layer": 0, "scale": True}
 
-       
     return portrayal
 
 
 grid=CanvasGrid(agent_portrayal,NumberCellsX,NumberCellsY,SIZE_OF_CANVAS_IN_PIXELS_X,SIZE_OF_CANVAS_IN_PIXELS_Y)
+
+
 """
 chart_currents=mesa.visualization.ChartModule(
     [
@@ -89,6 +60,6 @@ chart_currents=mesa.visualization.ChartModule(
 data_collector_name="datacollector"
 )"""
 
-server=mesa.visualization.ModularServer(SokobanModel,[grid],"Money Model",model_params=simulation_params)
+server=mesa.visualization.ModularServer(SokobanModel,[grid],"Sokoban",model_params=simulation_params)
 server.port=8521
 server.launch()

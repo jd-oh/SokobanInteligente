@@ -1,97 +1,245 @@
 from mesa import Agent
 from collections import deque
+from GoalAgent import GoalAgent
+
+from RoadAgent import RoadAgent
 
 class RobotAgent(Agent):
 
     def __init__(self,unique_id,model):
         super().__init__(unique_id,model)
+        self.path = None
+        self.came_from = None
+        self.rutaEntera=[]
+        
 
     def step(self) -> None:
         self.move()
-        #if self.wealth>0:
-           # self.give_money()
 
-
-    def give_money(self):
-        cellmates=self.model.grid.get_cell_list_contents([self.pos])
-        print("vecinos "+str(cellmates))
-
-        if len(cellmates)>1:
-            print("tipo " +str(type(cellmates[0])))
-            if isinstance(cellmates[0], RobotAgent):
-                print("si es instancia")
-
-            other=self.random.choice(cellmates)
-            other.wealth+=1
-            self.wealth-=1
+    
 
     def move(self)->None:
-      
-        possible_steps=self.model.grid.get_neighborhood(
-            self.pos,moore=False,include_center=False
-        )
-        print("actual "+str(self.pos)+" posibles "+str(possible_steps))
-        #new_position=recorridoAnchura()
-        #self.model.grid.move_agent(self,new_position)
+        # Guarda la posición actual antes de moverse
+        old_position = self.pos
 
-    def BreadthSearch(self,grafo,origen,destino):
-        cola=[]
-        visitados=[]
-        cola.append(origen)
-        visitados.append(origen)
-        while cola:
-            actual=cola.pop(0)
-            if actual==destino:
-                return True
-            for vecino in grafo[actual]:
-                if vecino not in visitados:
-                    cola.append(vecino)
-                    visitados.append(vecino)
-        return False
+        # Si el agente no tiene un camino, encuentra uno
+        if not self.path and not self.came_from:
+            #print("El agente está buscando un camino.")
+            start = self.pos
+            goal = self.model.get_goal_position()
+            self.path, self.came_from= self.breadth_first_search(start)
+            self.recorrerPath(self.path, self.came_from, 0, self.pos, goal)
+            #print("El agente ha encontrado un camino.")
+            #print(self.path)
+
+        # Si el agente tiene un camino, sigue el próximo paso en el camino
+        if self.path and self.came_from:
+            if(len(self.rutaEntera)==0):
+                self.rutaEntera.append(self.path[0])
+            
+            next_step = self.rutaEntera.pop(0)
+            self.model.grid.move_agent(self, next_step)
+            
+            
+            #print(f"El robot se ha movido a la posición {next_step}")
+            #print(self.get_valid_neighbors(next_step))
+        
+        # Comprueba si la antigua posición está vacía
+        if len(self.model.grid.get_cell_list_contents([old_position])) == 0:
+            # Si está vacía, crea un nuevo RoadAgent en esa posición
+            road_agent = RoadAgent(self.model.nextId(), self.model)
+            self.model.grid.place_agent(road_agent, old_position)
+            self.model.schedule.add(road_agent)
+        
+
+        current_cell_contents = self.model.grid.get_cell_list_contents([self.pos])
+        if any(isinstance(content, GoalAgent) for content in current_cell_contents):
+            print("El agente ha alcanzado el objetivo.")
+            # Aquí puedes agregar el código para detener el programa
+
+        
+        
     
+    def get_valid_neighbors(self, pos):
+        neighborhood = self.model.grid.get_neighborhood(pos, moore=False,include_center=False)
+        valid_neighbors = []
+        for neighbor in neighborhood:
+            cell_contents = self.model.grid.get_cell_list_contents([neighbor]) # Obtiene el contenido de la celda
+            if cell_contents:  # Si la celda no está vacía
+                item = cell_contents[0] # Obtiene el elemento en la celda
+                if isinstance(item, RoadAgent) or isinstance(item, GoalAgent):  # Si el primer elemento en la celda es un RoadAgent o si es la meta
+                    valid_neighbors.append(neighbor)  # Añade el vecino a la lista de vecinos válidos
 
-
-    def valid_step(self, node):
-        # Verifica que el paso que va a dar no sea una roca
-        if(node=="R"):
-            return False
-        else:
-            return True
+        # Ordenamos los vecinos válidos de acuerdo a los criterios especificados
+        valid_neighbors=self.sortNeighborhoods(valid_neighbors,pos)
+        #print(valid_neighbors)
+        return valid_neighbors
+    
+    #Ordena los posibles vecinos, de acuerdo a la prioridad izquierda, arriba, derecha, abajo    
+    def sortNeighborhoods(self,listaPosiblesPosiciones, posActual):
+        listaPosiblesPosiciones = listaPosiblesPosiciones.copy()  # Crea una copia de la lista
+        posicionesOrdenadas = []
+        posiciones = [(posActual[0] - 1, posActual[1]), (posActual[0], posActual[1] + 1), 
+                    (posActual[0] + 1, posActual[1]), (posActual[0], posActual[1] - 1)]
         
-    def isGoal(self, node):
-        # Verifica que el nodo sea la meta
-        if(node=="M"):
-            return True
-        else:
-            return False
+        for pos in posiciones:
+            if pos in listaPosiblesPosiciones:
+                listaPosiblesPosiciones.remove(pos)
+                posicionesOrdenadas.append(pos)
         
-    def RecorridoEnAnchura(self, inicio, objetivo):
-        recorrido = []  # Lista para almacenar el recorrido
-        nodos_visitados = []  # Lista para almacenar los nodos visitados
-        cola = deque()  # Cola para almacenar los nodos a visitar
+        return posicionesOrdenadas + listaPosiblesPosiciones
+    
+    
+    
+    def breadth_first_search(self, start):
+        frontier = deque() 
+        frontier.append(start)
+        came_from = {}
+        came_from[start] = [start]  # Inicializa con el nodo de inicio
 
-        cola.append(inicio)  # Agrega el nodo de inicio a la cola
-        nodos_visitados.append(inicio)  # Agrega el nodo de inicio a los nodos visitados
+        while len(frontier) > 0:
+            current = frontier[0]  # Mira el próximo nodo en la cola, pero no lo saca
 
-        while cola:  # Mientras haya nodos en la cola
-            recorrido.append(cola[0])  # Agrega el primer nodo de la cola al recorrido
-            # Si el primer nodo de la cola es el objetivo, termina el bucle
-            if cola[0].x == objetivo.x and cola[0].y == objetivo.y:
+            # Si el próximo nodo de la  es el GoalAgent, detén la búsqueda
+            cell_contents = self.model.grid.get_cell_list_contents([current])
+            if any(isinstance(content, GoalAgent) for content in cell_contents):
                 break
-            #nodo_actual = cola.popleft()  # Quita el primer nodo de la cola
-            adyacentes=self.model.grid.get_neighborhood(
-            self.pos,moore=False,include_center=False)
-            for adyacente in adyacentes:  # Para cada nodo adyacente
-                # Si el nodo adyacente no está en el recorrido, lo agrega a la cola y a los nodos visitados
-                if not self.no_esta_en_lista(recorrido, adyacente):
-                    cola.append(adyacente)
-                    nodos_visitados.append(adyacente)
 
-        return recorrido  # Devuelve el recorrido
-    
-    def no_esta_en_lista(self, recorrido, adyacente):
-        for nodo in recorrido:  # Para cada nodo en el recorrido
-            # Si el nodo es el mismo que el nodo adyacente, devuelve True
-            if nodo.x == adyacente.x and nodo.y == adyacente.y:
-                return True
-        return False  # Si no encuentra el nodo adyacente en el recorrido, devuelve False
+            current = frontier.popleft()  # Saca el nodo actual de la cola
+
+            for next in self.get_valid_neighbors(current):
+                if next not in came_from:
+                    frontier.append(next)
+                    came_from[next] = came_from[current] + [next]  # Agrega el nodo actual a la lista del nodo padre
+
+        keys = list(came_from.keys())
+        path = keys
+        print("keys: ",keys)
+       # print("El agente ha encontrado un camino.", path)
+        print("came_from: ",came_from)
+
+        return path, came_from
+
+    def recorrerPath(self,path, came_from, contador, posActual, goal):
+        #print("path: ",self.path)
+        if(posActual==goal):
+            return True
+        #posActual = self.pos
+        contador+=1
+        #print("contador: ",contador,"posactual: ", posActual, "next_step: ",self.path[contador])
+        next_step = path[contador]
+        #Si el siguiente paso es hijo o padre de la posición actual
+        #entonces se moverá. Esto se hace para evitar que se mueva en diagonal
+        if (next_step in self.get_valid_neighbors(posActual) or next_step==came_from[posActual]):
+            #self.model.grid.move_agent(self, next_step)
+            self.rutaEntera.append(next_step)
+            self.recorrerPath(path, came_from, contador, next_step, goal)
+        else:
+            #print("entré")
+            #print("camefrom posActual: ",came_from[posActual])
+            came_from_reverse_posActual = came_from[posActual][::-1]
+            #print("posactual: ",posActual," came_from_reverse_posActual: ",came_from_reverse_posActual)
+            came_from_nextStep = came_from[next_step]
+            nuevaRuta = []
+            posicionPadreComun = None
+            for nodo in came_from_reverse_posActual:
+                nuevaRuta.append(nodo)
+                if (nodo in came_from_nextStep):
+                    posicionPadreComun=came_from_nextStep.index(nodo)+1
+                    break
+
+            #Ahora la nueva ruta será devolviendo hacia el padre común y luego desde ahi hacia el siguiente paso
+            if(came_from_nextStep[posicionPadreComun:]!=None):
+                nuevaRuta=nuevaRuta+came_from_nextStep[posicionPadreComun:]
+            #Ahora movemos el agente por cada uno de los pasos de la nueva ruta
+            #for paso in nuevaRuta:
+            #    self.model.grid.move_agent(self, paso)
+            self.rutaEntera=self.rutaEntera+nuevaRuta
+            
+            self.recorrerPath(path, came_from, contador, next_step, goal)
+        print("nueva ruta: ",self.rutaEntera)
+
+
+    """
+    def breadth_first_search(self, start, goal):
+        
+        Realiza una búsqueda en anchura desde el punto de partida hasta la meta.
+
+        Args:
+            start: El punto de partida.
+            goal: La meta.
+
+        Returns:
+            Una lista con el camino desde el punto de partida a la meta.
+        
+
+        # Creamos una cola para almacenar los nodos a explorar.
+        queue = deque([start])
+
+        # Creamos un conjunto para almacenar los nodos ya explorados.
+        explored = set()
+
+        # Creamos una lista para almacenar el camino.
+        path = []
+
+        # Mientras la cola no esté vacía, seguimos explorando.
+        while queue:
+        # Sacamos el primer nodo de la cola.
+            node = queue.popleft()
+
+        # Si el nodo es la meta, hemos encontrado el camino.
+        if node == goal:
+            path.append(node)
+            return path
+            print("El agente ha encontrado un camino.", path)
+
+        # Si el nodo no está explorado, lo exploramos.
+        if node not in explored:
+            # Añadimos el nodo a la lista de explorados.
+            explored.add(node)
+        contadorVecinos=0
+        # Añadimos los vecinos del nodo a la cola.
+        for neighbor in self.get_valid_neighbors(node):
+            contadorVecinos+=1
+            queue.append(neighbor)
+            print("nodo ",node, " vecino",contadorVecinos, " ",neighbor)
+
+
+        # Si llegamos a este punto, no se ha encontrado el camino.
+        return None
+    """
+    """
+    def breadth_first_search(self, start, goal):
+        # Crea una cola para almacenar los nodos por visitar
+        queue = deque([[start]])
+        # Crea un conjunto para almacenar los nodos visitados
+        visited = set([start])
+
+        while queue:
+           # print("cola: ",queue)
+            # Toma el primer camino de la cola
+            path = queue.popleft()
+
+            # Obtiene el último nodo de este camino
+            node = path[-1]
+
+            # Si este nodo es el objetivo, entonces hemos encontrado una solución
+            if node == goal:
+                return path
+
+            # Obtiene los vecinos válidos del nodo
+            neighbors = self.get_valid_neighbors(node)
+
+            # Agrega los vecinos válidos a la cola para visitarlos más tarde
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    new_path = list(path)
+                    new_path.append(neighbor)
+                    queue.append(new_path)
+
+        # Si se ha vaciado la cola sin encontrar el objetivo, entonces no hay solución
+        return None
+    """
+
+   
