@@ -9,7 +9,7 @@ from RoadAgent import RoadAgent
 from RobotAgent import RobotAgent
 from WallAgent import WallAgent
 
-from controller.FileLoad import FileLoad
+from controllers.FileLoad import FileLoad
 
 NUMBER_OF_CELLS=3
 SIZE_OF_CANVAS_IN_PIXELS_X=500
