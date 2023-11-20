@@ -7,6 +7,8 @@ from GoalAgent import GoalAgent
 from RoadAgent import RoadAgent
 import heapq
 
+from numberAgent import NumberAgent
+
 class RobotAgent(Agent):
 
     def __init__(self,unique_id,model):
@@ -31,10 +33,10 @@ class RobotAgent(Agent):
             start = self.pos
             goal = self.model.get_goal_position()
             # self.path, self.came_from= self.breadth_first_search(start)
-            self.path, self.came_from= self.depth_first_search(start)
+            #self.path, self.came_from= self.depth_first_search(start)
             #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
-            #self.path, self.came_from = self.a_star_search(start)
+            self.path, self.came_from = self.a_star_search(start)
             self.traversePath(self.path, self.came_from, 0, self.pos, goal)
             #print("El agente ha encontrado un camino.")
             #print(self.path)
@@ -56,12 +58,21 @@ class RobotAgent(Agent):
             road_agent = RoadAgent(self.model.nextId(), self.model)
             self.model.grid.place_agent(road_agent, old_position)
             self.model.schedule.add(road_agent)
+
+        
         
         # Comprueba si el agente ha alcanzado la meta
         current_cell_contents = self.model.grid.get_cell_list_contents([self.pos])
         if any(isinstance(content, GoalAgent) for content in current_cell_contents):
             print("El agente ha alcanzado el objetivo.")
             # Aquí puedes agregar el código para detener el programa
+
+            
+            #Muestra el orden de expansión
+            for i in range(len(self.path)):
+                agent=NumberAgent(self.model.nextId(),self.model, i+1)
+                self.model.grid.place_agent(agent, self.path[i])
+                self.model.schedule.add(agent)
 
         
         
@@ -290,6 +301,7 @@ class RobotAgent(Agent):
             cell_contents = self.model.grid.get_cell_list_contents([current])
             if any(isinstance(content, GoalAgent) for content in cell_contents):
                 break
+            
             priority=0
             for next in self.get_valid_neighbors(current):
                 prioridadAnterior = priority
@@ -302,13 +314,15 @@ class RobotAgent(Agent):
                     frontier.put(next, priority)
                     print("priority: ",priority, "de ",next)
                     came_from[next] = came_from[current] + [next]
-                    if (prioridadAnterior==priority):
-                        print("prioridad anterior: ",prioridadAnterior,"prioridad actual: ",priority)
-                        frontier.queue=self.sortNeighborhoods(list(frontier.queue),current)
+                    frontier.queue=self.sortNeighborhoods(list(frontier.queue),current)
+
+                    #if (prioridadAnterior==priority):
+                     #   print("prioridad anterior: ",prioridadAnterior,"prioridad actual: ",priority)
+                      #  frontier.queue=self.sortNeighborhoods(list(frontier.queue),current)
+                    
                     
                 
                 print("ordenado con current: ",current)
-            
             print("frontier: ",frontier.queue)
             
 
@@ -319,13 +333,7 @@ class RobotAgent(Agent):
         return path, came_from
 
 
-
-
-
-
-
-
-
+    
 
 
 
