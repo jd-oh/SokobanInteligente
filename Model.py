@@ -27,8 +27,8 @@ class SokobanModel(Model):
             }
         )
         """
-        matrizArchivo=self.leerArchivo()
-        self.matriz, self.contadorId=self.crearMatrizAgentes(matrizArchivo)
+        self.matrizArchivo=self.leerArchivo()
+        self.matriz, self.contadorId=self.crearMatrizAgentes(self.matrizArchivo)
         self.ubicarAgentes(self.matriz)
 
 
@@ -77,10 +77,24 @@ class SokobanModel(Model):
         
     def leerArchivo(self):
         fileLoad = FileLoad()
+<<<<<<< HEAD
         matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa4.txt")
+=======
+        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
+>>>>>>> 2b96ca20af3f6a91a63fddecddffec7651a7ceae
         return matrizArchivo
         
+    def get_valid_nodes(self):
+            nodos_validos = []
+            filas = len(self.matrizArchivo)
+            columnas = len(self.matrizArchivo[0])
+            self.matrizArchivo.reverse()
+            for i in range(filas):
+                for j in range(columnas):
+                    if self.matrizArchivo[i][j] == "C" or self.matrizArchivo[i][j] == "C-a" or self.matrizArchivo[i][j] == "M":  # Define tu propio criterio aquí
+                        nodos_validos.append((j, i))
 
+            return nodos_validos
 
     """
     Recibe una matriz de agentes y los ubica en la grilla.

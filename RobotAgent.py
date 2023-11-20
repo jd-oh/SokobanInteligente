@@ -33,10 +33,18 @@ class RobotAgent(Agent):
             start = self.pos
             goal = self.model.get_goal_position()
             # self.path, self.came_from= self.breadth_first_search(start)
+<<<<<<< HEAD
             #self.path, self.came_from= self.depth_first_search(start)
             #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
             self.path, self.came_from = self.a_star_search(start)
+=======
+            # self.path, self.came_from= self.depth_first_search(start)
+            #self.path, self.came_from= self.breadth_first_search(start)
+            #self.path, self.came_from = self.uniform_cost_search(start)
+            #self.path, self.came_from = self.a_star_search(start)
+            self.path, self.came_from= self.beam_search(start)
+>>>>>>> 2b96ca20af3f6a91a63fddecddffec7651a7ceae
             self.traversePath(self.path, self.came_from, 0, self.pos, goal)
             #print("El agente ha encontrado un camino.")
             #print(self.path)
@@ -165,19 +173,57 @@ class RobotAgent(Agent):
                 if next not in visited:
                     stack.append(next)
                     came_from[next] = came_from[current] + [next]  # Agrega el nodo actual a la lista del nodo padre
-
         
         for visited_node in visited:
             for node in came_from:            
                 if visited_node == node:
                     complete_search[node] = came_from.get(node)
                     break
-        
-        
-       # print("El agente ha encontrado un camino.", path)
-        print("complete_search: ",complete_search)
 
         return visited, complete_search
+    
+    def beam_search(self, start):
+        nodes = self.model.get_valid_nodes()
+        beta = self.get_beam_width(nodes)
+        queue = PriorityQueue()
+        queue.put((0, start))  # Tupla con el valor prioritario y el nodo inicial
+        came_from = {}
+        came_from[start] = [start]  # Inicializa con el nodo de inicio
+        visited = []
+
+        while not queue.empty():
+            priority, current = queue.get()
+            visited.append(current)
+            cell_contents = self.model.grid.get_cell_list_contents([current])
+            if any(isinstance(content, GoalAgent) for content in cell_contents):
+                break
+
+            neighbors = self.get_valid_neighbors(current)
+
+            # Ordena los vecinos por algún criterio (por ejemplo, utilizando la función calculateEuclideanHeuristic)
+            sorted_neighbors = sorted(neighbors, key=lambda x: self.calculateEuclideanHeuristic(x))
+
+            # Solo conserva los mejores "beam_width" vecinos
+            sorted_neighbors = sorted_neighbors[:beta]
+
+            for next in sorted_neighbors:
+                if next not in came_from:
+                    queue.put((self.calculateEuclideanHeuristic(next), next))
+                    came_from[next] = came_from[current] + [next]
+
+        keys = list(came_from.keys())
+        path = keys
+        
+        return path, came_from
+
+    def get_beam_width(self, nodos):
+        beta = 0
+        for nodo in nodos:
+            adyacentes = self.get_valid_neighbors(nodo)
+            if len(adyacentes) > beta:
+                beta = len(adyacentes)
+        return beta
+    
     """
     Recorre el camino encontrado por la búsqueda en anchura, pero volviendo al padre común entre el nodo actual y el siguiente paso
     que no están ortogonalmente alineados. Esto se hace para evitar que el agente se mueva en diagonal.
