@@ -10,6 +10,7 @@ from RobotAgent import RobotAgent
 from WallAgent import WallAgent
 
 from controllers.FileLoad import FileLoad
+from numberAgent import NumberAgent
 
 NUMBER_OF_CELLS=3
 SIZE_OF_CANVAS_IN_PIXELS_X=500
@@ -28,6 +29,7 @@ simulation_params={
     "number_of_agents":mesa.visualization.Slider(name='Number of Agents', value=1, min_value=1, max_value=200, step=1, description="seleccionar numero de agentes"),
     "width":NumberCellsX,
     "height":NumberCellsY,
+    
 }
 
 def agent_portrayal(agent):
@@ -43,7 +45,17 @@ def agent_portrayal(agent):
     if isinstance(agent, PackageAgent):
         return {"Shape":"iconos/paquete.png", "Layer": 1, "scale": True}
     if isinstance(agent, RoadAgent):
-        return {"Shape":"iconos/pavimentacion.png", "Layer": 0, "scale": True}    
+        return {"Shape":"iconos/pavimentacion.png", "Layer": 0, "scale": True}
+    if isinstance(agent, NumberAgent):
+        return {"Shape": "rect", 
+                 "Filled": "true", 
+                 "Layer": 2, 
+                 "w": 10,
+                 "h": 10,
+                 "Color": "white",  # color de la celda
+                 "text":str(agent.numero),
+                 "expansion": str(agent.numero),  # número a mostrar
+                 "text_color": "black"}
 
     return portrayal
 
