@@ -33,18 +33,16 @@ class RobotAgent(Agent):
             start = self.pos
             goal = self.model.get_goal_position()
             # self.path, self.came_from= self.breadth_first_search(start)
-<<<<<<< HEAD
             #self.path, self.came_from= self.depth_first_search(start)
             #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
             self.path, self.came_from = self.a_star_search(start)
-=======
             # self.path, self.came_from= self.depth_first_search(start)
             #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
             #self.path, self.came_from = self.a_star_search(start)
-            self.path, self.came_from= self.beam_search(start)
->>>>>>> 2b96ca20af3f6a91a63fddecddffec7651a7ceae
+            #self.path, self.came_from= self.beam_search(start)
+
             self.traversePath(self.path, self.came_from, 0, self.pos, goal)
             #print("El agente ha encontrado un camino.")
             #print(self.path)
