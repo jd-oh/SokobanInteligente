@@ -3,6 +3,7 @@ from queue import PriorityQueue
 from mesa import Agent
 from collections import deque
 from GoalAgent import GoalAgent
+from queue import Queue
 
 from RoadAgent import RoadAgent
 import heapq
@@ -34,14 +35,11 @@ class RobotAgent(Agent):
             goal = self.model.get_goal_position()
             # self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from= self.depth_first_search(start)
-            #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
-            self.path, self.came_from = self.a_star_search(start)
-            # self.path, self.came_from= self.depth_first_search(start)
-            #self.path, self.came_from= self.breadth_first_search(start)
-            #self.path, self.came_from = self.uniform_cost_search(start)
-            #self.path, self.came_from = self.a_star_search(start)
-            #self.path, self.came_from= self.beam_search(start)
+            # self.path, self.came_from = self.a_star_search(start)
+            # self.path, self.came_from= self.beam_search(start)
+            self.path, self.came_from = self.hill_climbing_search(start)
+
 
             self.traversePath(self.path, self.came_from, 0, self.pos, goal)
             #print("El agente ha encontrado un camino.")
@@ -141,8 +139,6 @@ class RobotAgent(Agent):
 
         keys = list(came_from.keys())
         path = keys
-        
-        print("El agente ha encontrado un camino.", path)
         #print("came_from: ",came_from)
 
         return path, came_from
@@ -180,17 +176,53 @@ class RobotAgent(Agent):
 
         return visited, complete_search
     
+    
+    def hill_climbing_search(self, start):
+        queue = Queue()
+        queue.put(start)  # Inicializa con el nodo de inicio
+        came_from = {}
+        came_from[start] = [start]  # Inicializa con el nodo de inicio
+        visited = set()
+
+        while not queue.empty():
+            current = queue.get()
+            visited.add(current)
+            cell_contents = self.model.grid.get_cell_list_contents([current])
+            if any(isinstance(content, GoalAgent) for content in cell_contents):
+                break
+
+            neighbors = self.get_valid_neighbors(current)
+
+            # Calcula la heurística para los vecinos
+            neighbor_heuristics = [(neighbor, self.calculateManhattanHeuristic(neighbor)) for neighbor in neighbors]
+
+            # Ordena los vecinos por heurística
+            sorted_neighbors = sorted(neighbor_heuristics, key=lambda x: x[1])
+
+            # Encuentra el mejor vecino
+            best_neighbor, best_heuristic = sorted_neighbors[0]
+
+            if best_neighbor not in visited:
+                queue.put(best_neighbor)
+                came_from[best_neighbor] = came_from[current] + [best_neighbor]
+
+        keys = list(came_from.keys())
+        path = keys
+
+        return path, came_from
+    
     def beam_search(self, start):
         nodes = self.model.get_valid_nodes()
-        beta = self.get_beam_width(nodes)
-        queue = PriorityQueue()
+        # beta = self.get_beam_width(nodes)
+        beta = 2
+        queue = Queue()
         queue.put((0, start))  # Tupla con el valor prioritario y el nodo inicial
         came_from = {}
         came_from[start] = [start]  # Inicializa con el nodo de inicio
         visited = set()
 
         while not queue.empty():
-            node_list = set()
+            node_list = []
             for i in range(beta):
                 
                 if not queue.empty():
@@ -203,7 +235,8 @@ class RobotAgent(Agent):
                     neighbors = self.get_valid_neighbors(current)
 
                     for potential_node in neighbors:
-                        node_list.add(potential_node)
+                        if potential_node not in visited:
+                            node_list.append(potential_node)
                 else:
                     break
 
