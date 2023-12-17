@@ -18,11 +18,10 @@ SIZE_OF_CANVAS_IN_PIXELS_Y=500
 
 
 fileLoad = FileLoad()
-<<<<<<< HEAD
+
 matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa4.txt")
-=======
-matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
->>>>>>> 2b96ca20af3f6a91a63fddecddffec7651a7ceae
+
+
 NumberCellsX=len(matrizArchivo[0])
 NumberCellsY=len(matrizArchivo)
 
