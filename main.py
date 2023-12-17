@@ -6,7 +6,7 @@ from models.Matrix import Matrix
 
 def main():
     fileLoad = FileLoad()
-    matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
+    matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa4.txt")
 
     for i in range(len(matrizArchivo)):
         

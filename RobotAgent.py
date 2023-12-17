@@ -171,31 +171,40 @@ class RobotAgent(Agent):
         queue.put((0, start))  # Tupla con el valor prioritario y el nodo inicial
         came_from = {}
         came_from[start] = [start]  # Inicializa con el nodo de inicio
-        visited = []
+        visited = set()
 
         while not queue.empty():
-            priority, current = queue.get()
-            visited.append(current)
-            cell_contents = self.model.grid.get_cell_list_contents([current])
-            if any(isinstance(content, GoalAgent) for content in cell_contents):
-                break
+            node_list = set()
+            for i in range(beta):
+                
+                if not queue.empty():
+                    current_priority, current = queue.get()
+                    visited.add(current)
+                    cell_contents = self.model.grid.get_cell_list_contents([current])
+                    if any(isinstance(content, GoalAgent) for content in cell_contents):
+                        break
 
-            neighbors = self.get_valid_neighbors(current)
+                    neighbors = self.get_valid_neighbors(current)
+
+                    for potential_node in neighbors:
+                        node_list.add(potential_node)
+                else:
+                    break
 
             # Ordena los vecinos por algún criterio (por ejemplo, utilizando la función calculateEuclideanHeuristic)
-            sorted_neighbors = sorted(neighbors, key=lambda x: self.calculateEuclideanHeuristic(x))
-
+            sorted_neighbors = sorted(node_list, key=lambda x: self.calculateManhattanHeuristic(x))
             # Solo conserva los mejores "beam_width" vecinos
             sorted_neighbors = sorted_neighbors[:beta]
 
-            for next in sorted_neighbors:
-                if next not in came_from:
-                    queue.put((self.calculateEuclideanHeuristic(next), next))
-                    came_from[next] = came_from[current] + [next]
+            for next_node in sorted_neighbors:
+                if next_node not in visited:
+                    priority = self.calculateManhattanHeuristic(next_node)
+                    queue.put((priority, next_node))
+                    came_from[next_node] = came_from[current] + [next_node]
 
         keys = list(came_from.keys())
         path = keys
-        
+
         return path, came_from
 
     def get_beam_width(self, nodos):

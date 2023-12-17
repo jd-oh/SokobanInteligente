@@ -77,7 +77,7 @@ class SokobanModel(Model):
         
     def leerArchivo(self):
         fileLoad = FileLoad()
-        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
+        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa5.txt")
         return matrizArchivo
         
     def get_valid_nodes(self):
