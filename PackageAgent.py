@@ -176,6 +176,7 @@ class PackageAgent(Agent):
 
         # Ordenamos los vecinos válidos de acuerdo a los criterios especificados
         valid_neighbors = self.sortNeighborhoods(valid_neighbors, pos)
+        
         return valid_neighbors
     #Ordena los posibles vecinos, de acuerdo a la prioridad izquierda, arriba, derecha, abajo    
     def sortNeighborhoods(self,listaPosiblesPosiciones, posActual):
