@@ -1,9 +1,10 @@
 from mesa import Model
+from CustomScheduler import CustomScheduler
 from GoalAgent import GoalAgent
 from PackageAgent import PackageAgent
 from RoadAgent import RoadAgent
 from RobotAgent import RobotAgent
-from mesa.time import RandomActivation
+from mesa.time import SimultaneousActivation
 from mesa.space import MultiGrid
 from mesa.datacollection import DataCollector
 import mesa
@@ -12,11 +13,13 @@ from controllers.FileLoad import FileLoad
 
 
 
+
 class SokobanModel(Model):
     def __init__(self,number_of_agents, width,height):
         self.num_agents=number_of_agents
         self.grid=MultiGrid(width,height,False) #Torus es falso para que no se salga de la grilla
-        self.schedule=RandomActivation(self)
+        self.schedule=SimultaneousActivation(self)
+        #self.schedule = CustomScheduler(self)
         self.running=True
 
         """
@@ -44,6 +47,8 @@ class SokobanModel(Model):
     A partir de la lectura del archivo, instancia los agentes dependiendo de que tipo son, crea 
     una matriz de estos y los ubica en la misma posición que en matrizArchivo.
    
+    """
+
     """
     def crearMatrizAgentes(self,matrizArchivo):
         
@@ -74,14 +79,47 @@ class SokobanModel(Model):
                     continue
     
         return matriz, contadorId 
-        
+    """
+
+    def crearMatrizAgentes(self, matrizArchivo):
+        robots = []
+        cajas = []
+        matriz = [[[] for _ in range(len(matrizArchivo[0]))] for _ in range(len(matrizArchivo))]
+
+        contadorId = 0
+      
+
+        # Luego, crea todos los PackageAgent
+        for i, fila in enumerate(matrizArchivo):
+            for j, columna in enumerate(fila):
+                if columna == "C-b":
+                    contadorId += 1
+                    matriz[i][j].append(PackageAgent(contadorId, self))
+
+          # Primero, crea todos los RobotAgent
+        for i, fila in enumerate(matrizArchivo):
+            for j, columna in enumerate(fila):
+                if columna == "C-a":
+                    contadorId += 1
+                    matriz[i][j].append(RobotAgent(contadorId, self))
+
+        # Finalmente, crea los demás agentes
+        for i, fila in enumerate(matrizArchivo):
+            for j, columna in enumerate(fila):
+                if columna in ["R", "C", "M"]:
+                    contadorId += 1
+                    if columna == "R":
+                        matriz[i][j].append(WallAgent(contadorId, self))
+                    elif columna == "C":
+                        matriz[i][j].append(RoadAgent(contadorId, self))
+                    elif columna == "M":
+                        matriz[i][j].append(GoalAgent(contadorId, self))
+
+        return matriz, contadorId
+    
     def leerArchivo(self):
         fileLoad = FileLoad()
-<<<<<<< HEAD
-        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa4.txt")
-=======
-        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
->>>>>>> 2b96ca20af3f6a91a63fddecddffec7651a7ceae
+        matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa6.txt")
         return matrizArchivo
         
     def get_valid_nodes(self):
@@ -91,7 +129,7 @@ class SokobanModel(Model):
             self.matrizArchivo.reverse()
             for i in range(filas):
                 for j in range(columnas):
-                    if self.matrizArchivo[i][j] == "C" or self.matrizArchivo[i][j] == "C-a" or self.matrizArchivo[i][j] == "M":  # Define tu propio criterio aquí
+                    if self.matrizArchivo[i][j] == "C" or self.matrizArchivo[i][j] == "C-a" or self.matrizArchivo[i][j] == "M":  
                         nodos_validos.append((j, i))
 
             return nodos_validos
@@ -129,4 +167,26 @@ class SokobanModel(Model):
             if any(isinstance(content, GoalAgent) for content in contents):
                 return (x, y)
         return None
+    
+    #Obtener los paquetes en la grilla
+    def get_packages_position(self):
+        packages = []
+        for (contents, pos) in self.grid.coord_iter():
+            x, y = pos
+            if any(isinstance(content, PackageAgent) for content in contents):
+                print("paquete encontrado en: "+str(x)+" "+str(y))
+                packages.append((x, y))
+        return packages
+
+    #OBtener el id del paquete en la grilla
+    def get_package_id(self, x, y):
+        cell_mates = self.grid.get_cell_list_contents([(x, y)])
+        for agent in cell_mates:
+            if isinstance(agent, PackageAgent):
+                return agent.unique_id
+            
+    def get_package_agent(self):
+        for agent in self.schedule.agents:
+            if isinstance(agent, PackageAgent):
+                return agent
 

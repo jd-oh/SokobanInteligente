@@ -6,93 +6,43 @@ from GoalAgent import GoalAgent
 
 from RoadAgent import RoadAgent
 import heapq
-from WallAgent import WallAgent
 
 from numberAgent import NumberAgent
 
-class PackageAgent(Agent):
+class RobotAgent(Agent):
 
     def __init__(self,unique_id,model):
         super().__init__(unique_id,model)
         self.path = None
         self.came_from = None
         self.rutaEntera=[]
-        self.end = False
-        self.contador=0
-        self.is_robot_ready = False
-        self.needs_new_route = False
         
-    def get_next_position(self):
-        if self.rutaEntera:
-            # Devuelve la próxima posición en la ruta
-            return self.rutaEntera[0]
-        else:
-            # Si la ruta está vacía, devuelve la posición actual
-            return self.pos
-
 
     def step(self) -> None:
         self.move()
-        if self.needs_new_route:  # Si necesita una nueva ruta}
-            print("El paquete necesita una nueva ruta.")
-            self.calculate_new_route()  # Calcula una nueva ruta
-            self.needs_new_route = False  # Restablece el indicador
 
-    def calculate_new_route(self):
-        # Obtiene la próxima posición en la ruta
-        next_position = self.get_next_position()
-
-        # Calcula la dirección en la que el paquete estaba intentando moverse
-        dx = next_position[0] - self.pos[0]
-        dy = next_position[1] - self.pos[1]
-
-        # Define las posibles direcciones en las que puedes mover el paquete
-        if dx != 0:  # Si estaba intentando moverse horizontalmente
-            directions = [(0, 1), (0, -1)]  # Intenta moverse verticalmente
-        else:  # Si estaba intentando moverse verticalmente
-            directions = [(1, 0), (-1, 0)]  # Intenta moverse horizontalmente
-
-        for dx, dy in directions:
-            new_position = (self.pos[0] + dx, self.pos[1] + dy)
-            # Comprueba si la nueva posición está dentro de los límites de la cuadrícula
-            if 0 <= new_position[0] < self.model.grid.width and 0 <= new_position[1] < self.model.grid.height:
-                cell_contents = self.model.grid.get_cell_list_contents([new_position])
-                # Si la celda está vacía y no contiene un WallAgent, mueve el paquete a esa posición
-                if len(cell_contents) == 0 and not any(isinstance(content, WallAgent) for content in cell_contents):
-                    self.model.grid.move_agent(self, new_position)
-                    # Añade la nueva posición al principio de la ruta
-                    self.rutaEntera.insert(0, new_position)
-                    return
-
-
-    def get_end(self):
-        return self.end
     
+
     def move(self)->None:
-        self.contador+=1
-        #print("contador paquete: "+str(self.contador))
         # Guarda la posición actual antes de moverse
         old_position = self.pos
 
         # Si el agente no tiene un camino, encuentra uno
         if not self.path and not self.came_from:
             #print("El agente está buscando un camino.")
-            start = self.pos #Posicion del robot
-            #packages = self.model.get_packages_position()
-            #start = packages[0] #Posicion del primer paquete
-
+            start = self.pos
             goal = self.model.get_goal_position()
             # self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from= self.depth_first_search(start)
-            #
-            self.path, self.came_from= self.breadth_first_search(start)
+            #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
-            #self.path, self.came_from = self.a_star_search(start)
+            self.path, self.came_from = self.a_star_search(start)
             # self.path, self.came_from= self.depth_first_search(start)
             #self.path, self.came_from= self.breadth_first_search(start)
             #self.path, self.came_from = self.uniform_cost_search(start)
             #self.path, self.came_from = self.a_star_search(start)
             #self.path, self.came_from= self.beam_search(start)
+
             self.traversePath(self.path, self.came_from, 0, self.pos, goal)
             #print("El agente ha encontrado un camino.")
             #print(self.path)
@@ -101,25 +51,15 @@ class PackageAgent(Agent):
         if self.path and self.came_from:
             if(len(self.rutaEntera)==0):
                 self.rutaEntera.append(self.path[0])
-
-            if self.is_robot_ready:
             
-
-                next_step = self.rutaEntera.pop(0)
-                #print("next step paquete: ",next_step, "contador: "+str(self.contador))
-                #self.model.grid.move_agent(self, next_step)
-                
-                #Mover el PackageAgent por la rutaEntera
-                #packages = self.model.get_packages_position()
-                #package = self.model.grid.get_cell_list_contents([packages[0]])[0]
-                self.model.grid.move_agent(self, next_step)
+            next_step = self.rutaEntera.pop(0)
+            self.model.grid.move_agent(self, next_step)
             
         
-        #Comprueba si la antigua posición está vacía
+        # Comprueba si la antigua posición está vacía
         #Esto se hace para que cuando el agente se mueva de la primera posición, llene ese espacio
         #con un RoadAgent
         if len(self.model.grid.get_cell_list_contents([old_position])) == 0:
-            #print("vacio")
             # Si está vacía, crea un nuevo RoadAgent en esa posición
             road_agent = RoadAgent(self.model.nextId(), self.model)
             self.model.grid.place_agent(road_agent, old_position)
@@ -131,7 +71,6 @@ class PackageAgent(Agent):
         current_cell_contents = self.model.grid.get_cell_list_contents([self.pos])
         if any(isinstance(content, GoalAgent) for content in current_cell_contents):
             print("El agente ha alcanzado el objetivo.")
-            self.end = True
             # Aquí puedes agregar el código para detener el programa
 
             
@@ -142,7 +81,7 @@ class PackageAgent(Agent):
                 self.model.schedule.add(agent)
 
         
-    """ 
+        
     #Obtiene los vecinos válidos de la posición actual. Para que sean validos, deben ser RoadAgent o GoalAgent
     def get_valid_neighbors(self, pos):
         neighborhood = self.model.grid.get_neighborhood(pos, moore=False,include_center=False)
@@ -158,25 +97,7 @@ class PackageAgent(Agent):
         valid_neighbors=self.sortNeighborhoods(valid_neighbors,pos)
         #print(valid_neighbors)
         return valid_neighbors
-    """
-
-    def get_valid_neighbors(self, pos):
-        neighborhood = self.model.grid.get_neighborhood(pos, moore=False, include_center=False)
-        valid_neighbors = []
-        for neighbor in neighborhood:
-            cell_contents = self.model.grid.get_cell_list_contents([neighbor])  # Obtiene el contenido de la celda
-            if cell_contents:  # Si la celda no está vacía
-                item = cell_contents[0]  # Obtiene el elemento en la celda
-                # Si el primer elemento en la celda es un RoadAgent o si es la meta
-                if isinstance(item, RoadAgent) or isinstance(item, GoalAgent):
-                    # Si el vecino está en una esquina o en un borde y no es la meta, ignóralo
-                    if self.is_corner_or_edge(neighbor) and not self.is_goal(neighbor):
-                        continue
-                    valid_neighbors.append(neighbor)  # Añade el vecino a la lista de vecinos válidos
-
-        # Ordenamos los vecinos válidos de acuerdo a los criterios especificados
-        valid_neighbors = self.sortNeighborhoods(valid_neighbors, pos)
-        return valid_neighbors
+    
     #Ordena los posibles vecinos, de acuerdo a la prioridad izquierda, arriba, derecha, abajo    
     def sortNeighborhoods(self,listaPosiblesPosiciones, posActual):
         listaPosiblesPosiciones = listaPosiblesPosiciones.copy()  # Crea una copia de la lista
@@ -191,21 +112,6 @@ class PackageAgent(Agent):
         
         return posicionesOrdenadas + listaPosiblesPosiciones
     
-    def is_corner_or_edge(self, pos):
-        x, y = pos
-        width, height = self.model.grid.width, self.model.grid.height
-        # Verifica si la posición está en una esquina
-        if (x == 0 or x == width - 1) and (y == 0 or y == height - 1):
-            return True
-        # Verifica si la posición está en un borde
-        if x == 0 or x == width - 1 or y == 0 or y == height - 1:
-            return True
-        return False
-
-    def is_goal(self, pos):
-        cell_contents = self.model.grid.get_cell_list_contents([pos])
-        return any(isinstance(content, GoalAgent) for content in cell_contents)
-
     
     #Realiza la búsqueda en anchura y crea una ruta. Pero esta ruta hace movimientos en diagonal.
     #También retorna un diccionario con la ruta desde cada nodo hasta el nodo inicial.
@@ -222,9 +128,6 @@ class PackageAgent(Agent):
             # Si el próximo nodo es el GoalAgent, detén la búsqueda
             cell_contents = self.model.grid.get_cell_list_contents([current])
             if any(isinstance(content, GoalAgent) for content in cell_contents):
-                print("BFS: La meta está a", len(came_from[current])-1, "niveles del nodo raíz")
-                print(came_from[current])
-
                 break
             
             current = queue.popleft()  # Saca el nodo actual de la cola
@@ -239,9 +142,8 @@ class PackageAgent(Agent):
         keys = list(came_from.keys())
         path = keys
         
-        #print("El agente ha encontrado un camino.", path)
+        print("El agente ha encontrado un camino.", path)
         #print("came_from: ",came_from)
-        
 
         return path, came_from
     
@@ -328,9 +230,6 @@ class PackageAgent(Agent):
     'posActual' la primera vez será la posición inicial (0,0), cada vez que se hace la recursión, será el siguiente paso (siguiente en 'path')
     """
     def traversePath(self,path, came_from, counter, currentPosition, goal):
-
-        #if(counter==0):
-            #self.rutaEntera.append(currentPosition)
         #Si la posición es la meta, entonces se detiene
         if(currentPosition==goal):
             return True
@@ -370,7 +269,7 @@ class PackageAgent(Agent):
 
             #Siguiente paso
             self.traversePath(path, came_from, counter, next_step, goal)
-        #print("nueva ruta: ",self.rutaEntera)
+        print("nueva ruta: ",self.rutaEntera)
 
 
     #Realiza la búsqueda de costo uniforme y crea una ruta. Pero esta ruta hace movimientos en diagonal.
@@ -459,8 +358,7 @@ class PackageAgent(Agent):
                     frontier.put(next, priority)
                     print("priority: ",priority, "de ",next)
                     came_from[next] = came_from[current] + [next]
-                    frontier.queue=sorted(list(frontier.queue),key=lambda x:self.calculateEuclideanHeuristic(x))
-                    #frontier.queue=self.sortNeighborhoods(list(frontier.queue),current)
+                    frontier.queue=self.sortNeighborhoods(list(frontier.queue),current)
 
                     #if (prioridadAnterior==priority):
                      #   print("prioridad anterior: ",prioridadAnterior,"prioridad actual: ",priority)

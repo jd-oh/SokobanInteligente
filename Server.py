@@ -18,11 +18,7 @@ SIZE_OF_CANVAS_IN_PIXELS_Y=500
 
 
 fileLoad = FileLoad()
-<<<<<<< HEAD
-matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa4.txt")
-=======
-matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa2.txt")
->>>>>>> 2b96ca20af3f6a91a63fddecddffec7651a7ceae
+matrizArchivo = fileLoad.cargar_matriz_desde_archivo("mapa6.txt")
 NumberCellsX=len(matrizArchivo[0])
 NumberCellsY=len(matrizArchivo)
 
@@ -47,6 +43,7 @@ def agent_portrayal(agent):
     if isinstance(agent, GoalAgent):
         return {"Shape":"iconos/bandera.png", "Layer": 0, "scale": True}
     if isinstance(agent, PackageAgent):
+       
         return {"Shape":"iconos/paquete.png", "Layer": 1, "scale": True}
     if isinstance(agent, RoadAgent):
         return {"Shape":"iconos/pavimentacion.png", "Layer": 0, "scale": True}
