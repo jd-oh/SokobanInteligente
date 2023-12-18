@@ -183,6 +183,8 @@ class RobotAgent(Agent):
         came_from = {}
         came_from[start] = [start]  # Inicializa con el nodo de inicio
         visited = set()
+        node_list = Queue()
+        level = 0
 
         while not queue.empty():
             current = queue.get()
@@ -199,18 +201,29 @@ class RobotAgent(Agent):
             # Ordena los vecinos por heurística
             sorted_neighbors = sorted(neighbor_heuristics, key=lambda x: x[1])
 
+            node_list.put(sorted(sorted_neighbors, key=lambda x: level+1))
+
             # Encuentra el mejor vecino
             best_neighbor, best_heuristic = sorted_neighbors[0]
 
             if best_neighbor not in visited:
                 queue.put(best_neighbor)
                 came_from[best_neighbor] = came_from[current] + [best_neighbor]
+            
+            if queue.empty() and not node_list.empty():
+                current_nodes = node_list.get()
+                for node in current_nodes:
+                     
+                    queue.put()
+
+
 
         keys = list(came_from.keys())
-        path = keys
+        print(keys)
+        path = came_from[start]  # Tomar el camino desde el inicio hasta el último nodo visitado
 
         return path, came_from
-    
+        
     def beam_search(self, start):
         nodes = self.model.get_valid_nodes()
         # beta = self.get_beam_width(nodes)
